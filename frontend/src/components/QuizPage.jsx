@@ -19,7 +19,7 @@ const QuizPage = () => {
 
   useEffect(() => {
     if (plantName) {
-      fetch(`${config.backendUrl}/api/quizzes/${plantName}`)
+      fetch(`https://herbal-garden-frontend-io1s.onrender.com/api/quizzes/${plantName}`)
         .then(res => {
           if (!res.ok) {
             throw new Error('Quiz not found');
