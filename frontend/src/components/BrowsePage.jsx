@@ -15,7 +15,7 @@ const BrowsePage = ({ plantModels }) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  const API_BASE = config.backendUrl.replace(/\/$/, "") || ; // remove trailing slash
+  const API_BASE = config.backendUrl;
 
   // Fetch all plants from backend
   useEffect(() => {
