@@ -15,7 +15,7 @@ const BrowsePage = ({ plantModels }) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  const API_BASE = config.backendUrl;
+  const API_BASE = (config.backendUrl || "").replace(/\/$/, "");
 
   // Fetch all plants from backend
   useEffect(() => {
@@ -25,28 +25,40 @@ const BrowsePage = ({ plantModels }) => {
         const response = await axios.get(`${API_BASE}/api/plants`);
         const data = response.data;
 
-        // ✅ Normalize response to ensure it's an array
+        // Ensure plants is always an array
         if (Array.isArray(data)) {
           setPlants(data);
         } else if (data && Array.isArray(data.plants)) {
           setPlants(data.plants);
         } else {
-          console.warn("Unexpected API response format:", data);
-          setPlants([]);
+          // If backend response is invalid or empty, fallback to plantModels
+          console.warn("Unexpected API response. Using fallback plantModels.");
+          const fallbackPlants = Object.keys(plantModels).map((key) => ({
+            _id: key,
+            name: plantModels[key].name,
+            images: [plantModels[key].image],
+          }));
+          setPlants(fallbackPlants);
         }
 
         setLoading(false);
       } catch (err) {
         console.error("Error fetching plants:", err);
-        setError("Failed to load plants");
+        setError("Failed to load plants. Showing fallback plants.");
+        const fallbackPlants = Object.keys(plantModels).map((key) => ({
+          _id: key,
+          name: plantModels[key].name,
+          images: [plantModels[key].image],
+        }));
+        setPlants(fallbackPlants);
         setLoading(false);
       }
     };
 
     fetchPlants();
-  }, []);
+  }, [API_BASE, plantModels]);
 
-  // Handle search functionality
+  // Handle search
   const handleSearch = async () => {
     if (!searchTerm.trim()) {
       setSearchResults([]);
@@ -56,8 +68,9 @@ const BrowsePage = ({ plantModels }) => {
 
     try {
       const response = await axios.get(`${API_BASE}/api/plants/search?name=${searchTerm}`);
-      if (response.data && response.data.length > 0) {
-        setSearchResults(response.data);
+      const data = response.data;
+      if (Array.isArray(data) && data.length > 0) {
+        setSearchResults(data);
         setShowSearchResults(true);
         return;
       }
@@ -65,26 +78,30 @@ const BrowsePage = ({ plantModels }) => {
       console.error("Error searching plants from API:", err);
     }
 
-    // Fallback to local search
-    const lowerCaseSearch = searchTerm.toLowerCase().trim();
-    const results = Object.keys(plantModels).filter(
-      (key) =>
-        key.includes(lowerCaseSearch) ||
-        plantModels[key].name.toLowerCase().includes(lowerCaseSearch)
-    );
+    // Fallback local search from plantModels
+    const lowerCaseSearch = searchTerm.toLowerCase();
+    const results = Object.keys(plantModels)
+      .filter(
+        (key) =>
+          key.toLowerCase().includes(lowerCaseSearch) ||
+          plantModels[key].name.toLowerCase().includes(lowerCaseSearch)
+      )
+      .map((key) => ({
+        _id: key,
+        name: plantModels[key].name,
+        images: [plantModels[key].image],
+      }));
 
     setSearchResults(results);
     setShowSearchResults(true);
   };
 
   const handleSelectPlant = (plant) => {
-    if (typeof plant === "string" && plantModels[plant]) {
-      navigate(`/model/${plant}`);
-    } else if (plant._id) {
-      navigate(`/model/${plant.name.toLowerCase()}`);
-    }
+    navigate(`/model/${plant.name.toLowerCase()}`);
+    setShowSearchResults(false);
   };
 
+  // Close search dropdown on click outside
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (searchInputRef.current && !searchInputRef.current.contains(event.target)) {
@@ -96,6 +113,9 @@ const BrowsePage = ({ plantModels }) => {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
+  // Render plants (either API or fallback)
+  const plantsToRender = showSearchResults ? searchResults : plants;
+
   return (
     <div style={{ backgroundColor: "white", minHeight: "100vh" }}>
       <Navigation />
@@ -104,11 +124,9 @@ const BrowsePage = ({ plantModels }) => {
       <div
         style={{
           padding: "30px 20px",
-          backgroundColor: "white",
           display: "flex",
           flexDirection: "column",
           alignItems: "center",
-          justifyContent: "center",
         }}
       >
         <h1 style={{ color: "#28a745", marginBottom: "20px", textAlign: "center" }}>
@@ -126,9 +144,8 @@ const BrowsePage = ({ plantModels }) => {
               borderRadius: "8px",
               border: "2px solid #e9ecef",
               fontSize: "1rem",
-              backgroundColor: "white",
             }}
-            onKeyPress={(e) => e.key === "Enter" && handleSearch()}
+            onKeyDown={(e) => e.key === "Enter" && handleSearch()}
           />
           <button
             onClick={handleSearch}
@@ -147,7 +164,7 @@ const BrowsePage = ({ plantModels }) => {
           </button>
 
           {/* Search Results Dropdown */}
-          {showSearchResults && searchResults.length > 0 && (
+          {showSearchResults && plantsToRender.length > 0 && (
             <div
               style={{
                 position: "absolute",
@@ -161,36 +178,27 @@ const BrowsePage = ({ plantModels }) => {
                 zIndex: 10,
               }}
             >
-              {searchResults.map((result, index) => {
-                const isApiResult = typeof result !== "string";
-                const key = isApiResult ? result._id : result;
-                const name = isApiResult ? result.name : plantModels[result].name;
-                const image = isApiResult
-                  ? result.images?.[0] || "/placeholder.jpg"
-                  : plantModels[result].image;
-
-                return (
-                  <div
-                    key={key}
-                    onClick={() => handleSelectPlant(result)}
-                    style={{
-                      padding: "12px 15px",
-                      borderBottom: "1px solid #e9ecef",
-                      cursor: "pointer",
-                      display: "flex",
-                      alignItems: "center",
-                      gap: "10px",
-                    }}
-                  >
-                    <img
-                      src={image}
-                      alt={name}
-                      style={{ width: "40px", height: "40px", borderRadius: "4px", objectFit: "cover" }}
-                    />
-                    <span>{name}</span>
-                  </div>
-                );
-              })}
+              {plantsToRender.map((plant) => (
+                <div
+                  key={plant._id}
+                  onClick={() => handleSelectPlant(plant)}
+                  style={{
+                    padding: "12px 15px",
+                    borderBottom: "1px solid #e9ecef",
+                    cursor: "pointer",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "10px",
+                  }}
+                >
+                  <img
+                    src={plant.images?.[0] || "/placeholder.jpg"}
+                    alt={plant.name}
+                    style={{ width: "40px", height: "40px", borderRadius: "4px", objectFit: "cover" }}
+                  />
+                  <span>{plant.name}</span>
+                </div>
+              ))}
             </div>
           )}
         </div>
@@ -210,10 +218,10 @@ const BrowsePage = ({ plantModels }) => {
       >
         {loading ? (
           <p style={{ gridColumn: "1 / -1", textAlign: "center" }}>Loading plants...</p>
-        ) : error ? (
-          <p style={{ gridColumn: "1 / -1", textAlign: "center", color: "#dc3545" }}>{error}</p>
-        ) : Array.isArray(plants) && plants.length > 0 ? (
-          plants.map((plant) => (
+        ) : plantsToRender.length === 0 ? (
+          <p style={{ textAlign: "center", color: "#999" }}>No plants found.</p>
+        ) : (
+          plantsToRender.map((plant) => (
             <div
               key={plant._id}
               className="plant-card"
@@ -222,7 +230,6 @@ const BrowsePage = ({ plantModels }) => {
                 padding: "15px",
                 borderRadius: "8px",
                 boxShadow: "0 2px 4px rgba(0,0,0,0.1)",
-                transition: "transform 0.3s ease",
                 cursor: "pointer",
               }}
               onClick={() => navigate(`/model/${plant.name.toLowerCase()}`)}
@@ -230,21 +237,9 @@ const BrowsePage = ({ plantModels }) => {
               <img
                 src={plant.images?.[0] || "/placeholder.jpg"}
                 alt={plant.name}
-                style={{
-                  width: "100%",
-                  height: "180px",
-                  borderRadius: "8px",
-                  objectFit: "cover",
-                }}
+                style={{ width: "100%", height: "180px", borderRadius: "8px", objectFit: "cover" }}
               />
-              <p
-                style={{
-                  color: "#28a745",
-                  marginTop: "10px",
-                  fontSize: "1.1rem",
-                  textAlign: "center",
-                }}
-              >
+              <p style={{ color: "#28a745", marginTop: "10px", fontSize: "1.1rem", textAlign: "center" }}>
                 {plant.name}
               </p>
               <Link to={`/quiz/${plant.name}`} style={{ textDecoration: "none", marginTop: "10px" }}>
@@ -268,8 +263,6 @@ const BrowsePage = ({ plantModels }) => {
               </Link>
             </div>
           ))
-        ) : (
-          <p style={{ textAlign: "center", color: "#999" }}>No plants found.</p>
         )}
       </div>
     </div>
