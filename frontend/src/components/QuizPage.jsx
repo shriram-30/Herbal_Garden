@@ -21,7 +21,7 @@ const QuizPage = () => {
 
   useEffect(() => {
     if (plantName) {
-      fetch(`${API_BASE}api/quizzes/${plantName}`)
+      fetch(`${API_BASE}/api/quizzes/${plantName}`)
         .then(res => {
           if (!res.ok) {
             throw new Error('Quiz not found');
