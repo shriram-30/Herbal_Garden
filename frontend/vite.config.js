@@ -9,7 +9,7 @@ export default defineConfig(({ mode }) => ({
     strictPort: true,
     proxy: mode === 'development' ? {
       '/api': {
-        target: 'http://localhost:5000',
+        target: 'https://herbal-garden-backend.onrender.com',
         changeOrigin: true,
         secure: false,
         ws: true,
@@ -21,7 +21,7 @@ export default defineConfig(({ mode }) => ({
       },
       // For Google OAuth
       '/auth/google': {
-        target: 'http://localhost:5000',
+        target: 'https://herbal-garden-backend.onrender.com',
         changeOrigin: true,
         secure: false,
         ws: true
@@ -34,7 +34,7 @@ export default defineConfig(({ mode }) => ({
       VITE_BACKEND_URL: JSON.stringify(
         mode === 'development' 
           ? 'http://localhost:5000' 
-          : 'https://virtual-herbal-garden-cdah.onrender.com'
+          : 'https://herbal-garden-backend.onrender.com'
       )
     }
   },
