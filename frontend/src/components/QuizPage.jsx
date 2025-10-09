@@ -5,6 +5,8 @@ import config from '../config';
 
 import '../styles/QuizPage.css';
 
+
+const API_BASE = config.backendUrl;
 const QuizPage = () => {
   const { plantName } = useParams();
   const [quizInfo, setQuizInfo] = useState(null);
@@ -19,7 +21,7 @@ const QuizPage = () => {
 
   useEffect(() => {
     if (plantName) {
-      fetch(`https://herbal-garden-frontend-io1s.onrender.com/api/quizzes/${plantName}`)
+      fetch(`${API_BASE}api/quizzes/${plantName}`)
         .then(res => {
           if (!res.ok) {
             throw new Error('Quiz not found');
