@@ -24,11 +24,11 @@ const app = express();
 // Behind Vite dev proxy and for reverse proxies in general
 app.set('trust proxy', 1);
 // CORS: allow configured origin and common localhost variants
-const allowedOrigins = [
+const allowedOrigins = new Set([
   process.env.CORS_ORIGIN || 'https://herbal-garden-frontend.onrender.com',
   'http://localhost:5173',
   'http://127.0.0.1:5173'
-];
+]);
 app.use(cors({
   origin: (origin, callback) => {
     if (!origin) return callback(null, true); // mobile apps, curl, same-origin
