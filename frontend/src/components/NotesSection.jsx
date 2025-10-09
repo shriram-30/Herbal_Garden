@@ -1,413 +1,107 @@
-import React, { useState, useEffect } from 'react';
-import axios from 'axios';
-import config from '../config';
-import '../styles/NotesSection.css';
+import React, { useEffect, useState } from "react";
+import axios from "axios";
 
-const API_BASE = `${config.backendUrl}/api/notes`;
-
-
-
-const NotesSection = ({ plantName, userId = "default-user" }) => {
-  const [notes, setNotes] = useState([]);
-  const [recentNote, setRecentNote] = useState(null);
+const NotesSection = ({ userId, plantName }) => {
   const [notesByCategory, setNotesByCategory] = useState({});
-  const [newNote, setNewNote] = useState({
-    title: '',
-    content: '',
-    category: 'general',
-    tags: []
-  });
-  const [editingNote, setEditingNote] = useState(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
-  const [showAllNotes, setShowAllNotes] = useState(false);
-  const [selectedCategory, setSelectedCategory] = useState('all');
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
- 
-  // Fetch notes on component mount and when plantName changes
-  useEffect(() => {
-    fetchNotes();
-    fetchRecentNote();
-    fetchNotesByCategory();
-  }, [plantName, userId]);
+  const API_BASE = "http://localhost:5000/api/notes"; // change to your actual backend URL
 
-  const fetchNotes = async () => {
-    try {
-      setLoading(true);
-      const response = await axios.get(`${API_BASE}?userId=${userId}&plantName=${plantName}`);
-      setNotes(response.data);
-    } catch (error) {
-      console.error('Error fetching notes:', error);
-      setError('Failed to load notes');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const fetchRecentNote = async () => {
-    try {
-      const response = await axios.get(`${API_BASE}/recent?userId=${userId}&plantName=${plantName}`);
-      setRecentNote(response.data);
-    } catch (error) {
-      console.error('Error fetching recent note:', error);
-    }
-  };
-
+  // Fetch categorized notes
   const fetchNotesByCategory = async () => {
     try {
+      setLoading(true);
       const response = await axios.get(`${API_BASE}/category/${userId}`);
+
+      // Extract response data safely
+      const data = response.data;
       const categorized = {};
-      response.data.forEach(item => {
-        categorized[item._id] = item.notes.filter(note => 
-          !plantName || note.plantName === plantName
-        );
-      });
+
+      if (Array.isArray(data)) {
+        // ✅ If backend returns an array (e.g. [{ _id, notes: [...] }])
+        data.forEach((item) => {
+          categorized[item._id] = item.notes.filter(
+            (note) => !plantName || note.plantName === plantName
+          );
+        });
+      } else if (data && typeof data === "object") {
+        // ✅ If backend returns an object (e.g. { categoryName: [notes...] })
+        Object.keys(data).forEach((key) => {
+          const categoryNotes = Array.isArray(data[key]) ? data[key] : [];
+          categorized[key] = categoryNotes.filter(
+            (note) => !plantName || note.plantName === plantName
+          );
+        });
+      } else {
+        console.error("❌ Unexpected API response format:", data);
+        setError("Unexpected response format from server.");
+        return;
+      }
+
       setNotesByCategory(categorized);
-    } catch (error) {
-      console.error('Error fetching categorized notes:', error);
-    }
-  };
-
-  const handleCreateNote = async (e) => {
-    e.preventDefault();
-    if (!newNote.title.trim() || !newNote.content.trim()) {
-      setError('Title and content are required');
-      return;
-    }
-
-    try {
-      setLoading(true);
-      const noteData = {
-        ...newNote,
-        user: userId,
-        plantName: plantName,
-        tags: newNote.tags.filter(tag => tag.trim() !== '')
-      };
-
-      const response = await axios.post(API_BASE, noteData);
-      
-      // Refresh all data
-      await fetchNotes();
-      await fetchRecentNote();
-      await fetchNotesByCategory();
-      
-      // Reset form
-      setNewNote({
-        title: '',
-        content: '',
-        category: 'general',
-        tags: []
-      });
-      setError('');
-    } catch (error) {
-      console.error('Error creating note:', error);
-      setError('Failed to create note');
+      setError(null);
+    } catch (err) {
+      console.error("Error fetching categorized notes:", err);
+      setError("Failed to load notes. Please try again.");
     } finally {
       setLoading(false);
     }
   };
 
-  const handleUpdateNote = async (noteId, updatedData) => {
-    try {
-      setLoading(true);
-      await axios.put(`${API_BASE}/${noteId}`, updatedData);
-      
-      // Refresh data
-      await fetchNotes();
-      await fetchRecentNote();
-      await fetchNotesByCategory();
-      
-      setEditingNote(null);
-    } catch (error) {
-      console.error('Error updating note:', error);
-      setError('Failed to update note');
-    } finally {
-      setLoading(false);
+  useEffect(() => {
+    if (userId) {
+      fetchNotesByCategory();
     }
-  };
+  }, [userId, plantName]);
 
-  const handleDeleteNote = async (noteId) => {
-    if (!window.confirm('Are you sure you want to delete this note?')) return;
+  if (loading) {
+    return <p className="text-gray-400">Loading notes...</p>;
+  }
 
-    try {
-      setLoading(true);
-      await axios.delete(`${API_BASE}/${noteId}`);
-      
-      // Refresh data
-      await fetchNotes();
-      await fetchRecentNote();
-      await fetchNotesByCategory();
-    } catch (error) {
-      console.error('Error deleting note:', error);
-      setError('Failed to delete note');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleShareNote = async (noteId, isShared) => {
-    try {
-      setLoading(true);
-      await axios.put(`${API_BASE}/${noteId}/share`, { isShared });
-      
-      // Refresh data
-      await fetchNotes();
-      await fetchNotesByCategory();
-    } catch (error) {
-      console.error('Error sharing note:', error);
-      setError('Failed to share note');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const addTag = () => {
-    setNewNote(prev => ({
-      ...prev,
-      tags: [...prev.tags, '']
-    }));
-  };
-
-  const updateTag = (index, value) => {
-    setNewNote(prev => ({
-      ...prev,
-      tags: prev.tags.map((tag, i) => i === index ? value : tag)
-    }));
-  };
-
-  const removeTag = (index) => {
-    setNewNote(prev => ({
-      ...prev,
-      tags: prev.tags.filter((_, i) => i !== index)
-    }));
-  };
-
-  const formatDate = (dateString) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    });
-  };
-
-  const getFilteredNotes = () => {
-    if (selectedCategory === 'all') return notes;
-    return notes.filter(note => note.category === selectedCategory);
-  };
+  if (error) {
+    return <p className="text-red-500">{error}</p>;
+  }
 
   return (
-    <div className="notes-section">
-      <div className="notes-header">
-        <h3 className="section-title">📝 Your Notes for {plantName}</h3>
-        {error && <div className="error-message">{error}</div>}
-      </div>
-
-      {/* Create New Note Form */}
-      <form onSubmit={handleCreateNote} className="create-note-form">
-        <div className="form-row">
-          <input
-            type="text"
-            placeholder="Note title..."
-            value={newNote.title}
-            onChange={(e) => setNewNote(prev => ({ ...prev, title: e.target.value }))}
-            className="note-title-input"
-            maxLength={100}
-          />
-          <select
-            value={newNote.category}
-            onChange={(e) => setNewNote(prev => ({ ...prev, category: e.target.value }))}
-            className="category-select"
+    <div className="p-4">
+      <h2 className="text-xl font-bold mb-3 text-purple-600">Your Notes</h2>
+      {Object.keys(notesByCategory).length === 0 ? (
+        <p className="text-gray-500">No notes found.</p>
+      ) : (
+        Object.keys(notesByCategory).map((category) => (
+          <div
+            key={category}
+            className="bg-white shadow-md rounded-2xl p-4 mb-4 border border-purple-200"
           >
-            <option value="general">General</option>
-            <option value="personal">Personal</option>
-            <option value="research">Research</option>
-            <option value="observation">Observation</option>
-          </select>
-        </div>
-        
-        <textarea
-          placeholder="Write your note about this plant..."
-          value={newNote.content}
-          onChange={(e) => setNewNote(prev => ({ ...prev, content: e.target.value }))}
-          className="note-content-textarea"
-          rows={6}
-          maxLength={2000}
-        />
+            <h3 className="text-lg font-semibold text-purple-700 mb-2">
+              {category.toUpperCase()}
+            </h3>
 
-        {/* Tags Section */}
-        <div className="tags-section">
-          <label>Tags:</label>
-          <div className="tags-container">
-            {newNote.tags.map((tag, index) => (
-              <div key={index} className="tag-input-group">
-                <input
-                  type="text"
-                  value={tag}
-                  onChange={(e) => updateTag(index, e.target.value)}
-                  placeholder="Tag"
-                  className="tag-input"
-                  maxLength={20}
-                />
-                <button type="button" onClick={() => removeTag(index)} className="remove-tag-btn">×</button>
-              </div>
-            ))}
-            <button type="button" onClick={addTag} className="add-tag-btn">+ Add Tag</button>
+            {notesByCategory[category].length > 0 ? (
+              <ul className="space-y-2">
+                {notesByCategory[category].map((note) => (
+                  <li
+                    key={note._id}
+                    className="p-3 bg-purple-50 rounded-lg text-gray-700 shadow-sm"
+                  >
+                    <strong>{note.title}</strong>
+                    <p className="text-sm">{note.content}</p>
+                    {note.plantName && (
+                      <p className="text-xs text-gray-500">
+                        🌿 Plant: {note.plantName}
+                      </p>
+                    )}
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className="text-gray-400">No notes in this category.</p>
+            )}
           </div>
-        </div>
-
-        <button type="submit" disabled={loading} className="save-note-btn">
-          {loading ? 'Saving...' : 'Save Note'}
-        </button>
-      </form>
-
-      {/* Recent Note Display */}
-      {recentNote && (
-        <div className="recent-note-section">
-          <h4>📌 Most Recent Note</h4>
-          <div className="note-card recent">
-            <div className="note-header">
-              <h5>{recentNote.title}</h5>
-              <span className="note-category">{recentNote.category}</span>
-            </div>
-            <p className="note-content">{recentNote.content}</p>
-            <div className="note-footer">
-              <span className="note-date">{formatDate(recentNote.createdAt)}</span>
-              {recentNote.tags && recentNote.tags.length > 0 && (
-                <div className="note-tags">
-                  {recentNote.tags.map((tag, index) => (
-                    <span key={index} className="tag">{tag}</span>
-                  ))}
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
+        ))
       )}
-
-      {/* All Notes Section */}
-      <div className="all-notes-section">
-        <div className="notes-controls">
-          <button 
-            onClick={() => setShowAllNotes(!showAllNotes)} 
-            className="toggle-notes-btn"
-          >
-            {showAllNotes ? 'Hide All Notes' : `Show All Notes (${notes.length})`}
-          </button>
-          
-          {showAllNotes && (
-            <select
-              value={selectedCategory}
-              onChange={(e) => setSelectedCategory(e.target.value)}
-              className="category-filter"
-            >
-              <option value="all">All Categories</option>
-              <option value="general">General</option>
-              <option value="personal">Personal</option>
-              <option value="research">Research</option>
-              <option value="observation">Observation</option>
-            </select>
-          )}
-        </div>
-
-        {showAllNotes && (
-          <div className="notes-list">
-            {getFilteredNotes().map((note) => (
-              <div key={note._id} className="note-card">
-                {editingNote === note._id ? (
-                  <EditNoteForm 
-                    note={note}
-                    onSave={(updatedData) => handleUpdateNote(note._id, updatedData)}
-                    onCancel={() => setEditingNote(null)}
-                  />
-                ) : (
-                  <>
-                    <div className="note-header">
-                      <h5>{note.title}</h5>
-                      <div className="note-actions">
-                        <span className="note-category">{note.category}</span>
-                        <button onClick={() => setEditingNote(note._id)} className="edit-btn">✏️</button>
-                        <button onClick={() => handleDeleteNote(note._id)} className="delete-btn">🗑️</button>
-                        <button 
-                          onClick={() => handleShareNote(note._id, !note.isShared)} 
-                          className={`share-btn ${note.isShared ? 'shared' : ''}`}
-                        >
-                          {note.isShared ? '🔓' : '🔒'}
-                        </button>
-                      </div>
-                    </div>
-                    <p className="note-content">{note.content}</p>
-                    <div className="note-footer">
-                      <span className="note-date">{formatDate(note.createdAt)}</span>
-                      {note.updatedAt !== note.createdAt && (
-                        <span className="note-updated"> (Updated: {formatDate(note.updatedAt)})</span>
-                      )}
-                      {note.tags && note.tags.length > 0 && (
-                        <div className="note-tags">
-                          {note.tags.map((tag, index) => (
-                            <span key={index} className="tag">{tag}</span>
-                          ))}
-                        </div>
-                      )}
-                      {note.isShared && <span className="shared-indicator">🌐 Shared</span>}
-                    </div>
-                  </>
-                )}
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
     </div>
-  );
-};
-
-// Edit Note Form Component
-const EditNoteForm = ({ note, onSave, onCancel }) => {
-  const [editData, setEditData] = useState({
-    title: note.title,
-    content: note.content,
-    category: note.category,
-    tags: note.tags || []
-  });
-
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    onSave(editData);
-  };
-
-  return (
-    <form onSubmit={handleSubmit} className="edit-note-form">
-      <input
-        type="text"
-        value={editData.title}
-        onChange={(e) => setEditData(prev => ({ ...prev, title: e.target.value }))}
-        className="edit-title-input"
-        maxLength={100}
-      />
-      <select
-        value={editData.category}
-        onChange={(e) => setEditData(prev => ({ ...prev, category: e.target.value }))}
-        className="edit-category-select"
-      >
-        <option value="general">General</option>
-        <option value="personal">Personal</option>
-        <option value="research">Research</option>
-        <option value="observation">Observation</option>
-      </select>
-      <textarea
-        value={editData.content}
-        onChange={(e) => setEditData(prev => ({ ...prev, content: e.target.value }))}
-        className="edit-content-textarea"
-        rows={4}
-        maxLength={2000}
-      />
-      <div className="edit-actions">
-        <button type="submit" className="save-edit-btn">Save</button>
-        <button type="button" onClick={onCancel} className="cancel-edit-btn">Cancel</button>
-      </div>
-    </form>
   );
 };
 
