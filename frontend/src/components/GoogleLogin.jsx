@@ -3,6 +3,7 @@ import config from '../config';
 
 import '../styles/GoogleLogin.css';
 
+const API_BASE=config.backendUrl;
 export default function GoogleLogin({ label = 'Continue with Google', width = 260 }) {
   const [loading, setLoading] = useState(false);
 
@@ -10,7 +11,7 @@ export default function GoogleLogin({ label = 'Continue with Google', width = 26
     try {
       setLoading(true);
       // Redirect to backend's Google OAuth endpoint using proxy
-      window.location.href = `/api/auth/google`;
+      window.location.href = `${API_BASE}/api/auth/google`;
     } catch (_) {
       setLoading(false);
     }
