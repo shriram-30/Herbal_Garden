@@ -4,6 +4,8 @@ import { useParams } from 'react-router-dom';
 import config from '../config';
 import '../styles/PlantDescription.css';
 
+const API_BASE = config.backendUrl;
+
 const PlantDescription = ({ plantName: propPlantName }) => {
   const params = useParams();
   const plantName = propPlantName || params.plantName;
@@ -24,7 +26,7 @@ const PlantDescription = ({ plantName: propPlantName }) => {
         setError(null);
         
         console.log('Fetching plant data for:', plantName);
-        const response = await axios.get(`/api/plants/${encodeURIComponent(plantName)}`);
+        const response = await axios.get(`{API_BASE}/api/plants/${encodeURIComponent(plantName)}`);
         
         console.log('API Response:', response.data);
         
