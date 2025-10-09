@@ -26,7 +26,7 @@ const PlantDescription = ({ plantName: propPlantName }) => {
         setError(null);
         
         console.log('Fetching plant data for:', plantName);
-        const response = await axios.get(`{API_BASE}/api/plants/${encodeURIComponent(plantName)}`);
+        const response = await axios.get(`${API_BASE}/api/plants/${encodeURIComponent(plantName)}`);
         
         console.log('API Response:', response.data);
         
