@@ -17,7 +17,7 @@ router.get('/google/callback',
     session: true
   }),
   (req, res) => {
-    res.redirect(process.env.CLIENT_URL + '/main');
+    res.redirect("https://herbal-garden-frontend.onrender.com" + '/main');
   }
 );
 
