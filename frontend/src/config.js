@@ -7,7 +7,7 @@ const config = {
   // 4. Localhost (development fallback)
   backendUrl: (() => {
     // First check for environment variables
-    const envUrl =  "https://herbal-garden-3y5j.onrender.com" || import.meta.env.VITE_API_URL;
+    const envUrl =  "https://herbal-garden-backend.onrender.com" || import.meta.env.VITE_API_URL;
     if (envUrl) return envUrl;
     
     // Then use the Render URL as the primary endpoint
