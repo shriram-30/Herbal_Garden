@@ -242,25 +242,7 @@ const BrowsePage = ({ plantModels }) => {
               <p style={{ color: "#28a745", marginTop: "10px", fontSize: "1.1rem", textAlign: "center" }}>
                 {plant.name}
               </p>
-              <Link to={`/quiz/${plant.name}`} style={{ textDecoration: "none", marginTop: "10px" }}>
-                <button
-                  style={{
-                    width: "100%",
-                    padding: "8px",
-                    backgroundColor: "#e8f5e9",
-                    border: "1px solid #a5d6a7",
-                    borderRadius: "5px",
-                    cursor: "pointer",
-                    color: "#2e7d32",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    gap: "5px",
-                  }}
-                >
-                  <FaQuestionCircle /> Take Quiz
-                </button>
-              </Link>
+            
             </div>
           ))
         )}
