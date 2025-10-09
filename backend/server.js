@@ -26,6 +26,7 @@ app.set('trust proxy', 1);
 // CORS: allow configured origin and common localhost variants
 const allowedOrigins = new Set([
   process.env.CORS_ORIGIN,
+  https://herbal-garden-frontend.onrender.com,
   'http://localhost:5173',
   'http://127.0.0.1:5173',
 ]);
