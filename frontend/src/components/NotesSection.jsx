@@ -6,7 +6,7 @@ const NotesSection = ({ userId, plantName }) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  const API_BASE = "http://localhost:5000/api/notes"; // change to your actual backend URL
+  const API_BASE = `${config.backendUrl}/api/notes`;
 
   // Fetch categorized notes
   const fetchNotesByCategory = async () => {
