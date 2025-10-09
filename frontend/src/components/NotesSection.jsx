@@ -3,7 +3,8 @@ import axios from 'axios';
 import config from '../config';
 import '../styles/NotesSection.css';
 
-const API_BASE = config.backendUrl;
+const API_BASE = `${config.backendUrl}/api/notes`;
+
 
 
 const NotesSection = ({ plantName, userId = "default-user" }) => {
