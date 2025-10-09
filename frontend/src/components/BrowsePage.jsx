@@ -15,12 +15,14 @@ const BrowsePage = ({ plantModels }) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
+  const API_BASE = config.backendUrl;
+
   // Fetch all plants from backend
   useEffect(() => {
     const fetchPlants = async () => {
       try {
         setLoading(true);
-        const response = await axios.get('/api/plants');
+        const response = await axios.get('${API_BASE}/api/plants');
         if (response.data) {
           setPlants(response.data);
         }
@@ -45,7 +47,7 @@ const BrowsePage = ({ plantModels }) => {
     
     try {
       // First try to search from backend
-      const response = await axios.get(`/api/plants/search?name=${searchTerm}`);
+      const response = await axios.get(`${API_BASE}/api/plants/search?name=${searchTerm}`);
       if (response.data && response.data.length > 0) {
         setSearchResults(response.data);
         setShowSearchResults(true);
