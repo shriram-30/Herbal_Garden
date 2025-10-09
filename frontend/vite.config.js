@@ -11,7 +11,7 @@ export default defineConfig(({ mode }) => ({
       '/api': {
         target: 'https://herbal-garden-backend.onrender.com',
         changeOrigin: true,
-        secure: false,
+       secure: import.meta.env.PROD,
         ws: true,
         configure: (proxy, _options) => {
           proxy.on('error', (err, _req, _res) => {
@@ -23,7 +23,7 @@ export default defineConfig(({ mode }) => ({
       '/auth/google': {
         target: 'https://herbal-garden-backend.onrender.com',
         changeOrigin: true,
-        secure: false,
+        secure: import.meta.env.PROD,
         ws: true
       }
     } : undefined,
