@@ -19,7 +19,7 @@ const NotesSection = ({ plantName, userId = "default-user" }) => {
   const [showAllNotes, setShowAllNotes] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState('all');
 
-  const API_BASE = '/api/notes';
+  const API_BASE = config.backendUrl;
 
   // Fetch notes on component mount and when plantName changes
   useEffect(() => {
