@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import GoogleLogin from './GoogleLogin';
 import config from '../config';
-
 import '../styles/LoginPage.css';
 
 const LoginPage = () => {
@@ -12,49 +11,45 @@ const LoginPage = () => {
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
-  // Check if user is already logged in or if this is a callback from Google OAuth
+  // ✅ On mount: handle existing token or Google OAuth callback
   useEffect(() => {
-    // Check for existing token
     const token = localStorage.getItem('token');
     if (token) {
       navigate('/home');
       return;
     }
-    
-    // Check if this is a callback from Google OAuth
+
     const urlParams = new URLSearchParams(window.location.search);
     const oauthToken = urlParams.get('token');
     const user = urlParams.get('user');
     const error = urlParams.get('error');
     const errorMessage = urlParams.get('message');
-    
+
     if (oauthToken && user) {
       try {
-        // Parse user data if it's a JSON string
-        const userData = typeof user === 'string' ? JSON.parse(decodeURIComponent(user)) : user;
-        
-        // Store token and user data
+        const decodedUser = decodeURIComponent(user);
+        const parsedUser = JSON.parse(decodedUser);
+
         localStorage.setItem('token', oauthToken);
-        localStorage.setItem('user', JSON.stringify(userData));
-        
-        // Redirect to home page
+        localStorage.setItem('user', JSON.stringify(parsedUser));
+
         navigate('/home');
-        
-        // Clear URL parameters
         window.history.replaceState({}, document.title, window.location.pathname);
       } catch (err) {
         console.error('Error processing OAuth data:', err);
         setError(`Error processing login data: ${err.message}. Please try again.`);
       }
     } else if (error) {
-      const displayError = errorMessage 
-        ? `${error}: ${errorMessage}` 
-        : (error === 'google_auth_failed' ? 'Google login failed. Please try again.' : error);
+      const displayError = errorMessage
+        ? `${error}: ${errorMessage}`
+        : error === 'google_auth_failed'
+        ? 'Google login failed. Please try again.'
+        : error;
       setError(displayError);
     }
   }, [navigate]);
 
-  // Handle form submission
+  // ✅ Handle login form submission
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
@@ -80,13 +75,11 @@ const LoginPage = () => {
     };
 
     try {
-      // Try primary URL first
       let data;
       try {
         data = await loginUser(config.backendUrl);
       } catch (primaryError) {
         console.error('Primary login failed, trying fallback:', primaryError);
-        // If primary fails and not already trying localhost, try localhost
         if (!config.backendUrl.includes('localhost')) {
           try {
             data = await loginUser('http://localhost:5000');
@@ -99,11 +92,18 @@ const LoginPage = () => {
         }
       }
 
-      // Save token and user data to localStorage
-      localStorage.setItem('token', data.token);
-      localStorage.setItem('user', JSON.stringify(data.user));
-      
-      // Redirect to home page
+      // ✅ Safely handle and store login data
+      if (data?.token) {
+        localStorage.setItem('token', data.token);
+      }
+
+      if (data?.user && typeof data.user === 'object') {
+        localStorage.setItem('user', JSON.stringify(data.user));
+      } else {
+        console.warn('⚠️ No valid user data received, storing empty object.');
+        localStorage.setItem('user', JSON.stringify({}));
+      }
+
       navigate('/home');
     } catch (err) {
       setError(err.message || 'Failed to log in. Please check your credentials and try again.');
@@ -116,7 +116,7 @@ const LoginPage = () => {
     <div className="login-wrapper">
       <div className="login-card">
         <h2 className="login-title">Sign in to your account</h2>
-        
+
         {error && (
           <div className="login-error">
             {error === 'google_auth_failed' ? 'Google login failed. Please try again.' : error}
@@ -150,12 +150,8 @@ const LoginPage = () => {
             />
           </div>
 
-          <button
-            type="submit"
-            disabled={loading}
-            className="submit-button"
-          >
-            Sign In
+          <button type="submit" disabled={loading} className="submit-button">
+            {loading ? 'Signing in...' : 'Sign In'}
           </button>
         </form>
 
@@ -170,7 +166,8 @@ const LoginPage = () => {
         </div>
 
         <p className="signup-text">
-          Don't have an account? <Link to="/signup" className="signup-link">Sign up</Link>
+          Don't have an account?{' '}
+          <Link to="/signup" className="signup-link">Sign up</Link>
         </p>
       </div>
     </div>
