@@ -9,7 +9,7 @@ const registerUser = asyncHandler(async (req, res) => {
   const { name, email, password } = req.body;
 
   // Validate input
-  if (!name || !email || !password) {
+  if ( !email || !password) {
     res.status(400);
     throw new Error('Please provide name, email, and password');
   }
