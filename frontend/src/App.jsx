@@ -78,22 +78,25 @@ function App() {
     return () => clearInterval(interval);
   }, [welcomeText]);
 
-  // Fetch user on app load
+  // Fetch user on app load, check localStorage first
   useEffect(() => {
     const fetchUser = async () => {
-      try {
-        const response = await fetch('/api/users/profile', {
-          credentials: 'include',
-        });
-        if (response.ok) {
-          const data = await response.json();
-          setUser(data.user || null);
-        } else {
+      const storedUser = JSON.parse(localStorage.getItem('user'));
+      if (storedUser) {
+        setUser(storedUser);
+      } else {
+        try {
+          const response = await fetch('/api/users/profile', { credentials: 'include' });
+          if (response.ok) {
+            const data = await response.json();
+            setUser(data.user || null);
+          } else {
+            setUser(null);
+          }
+        } catch (err) {
+          console.error('Failed to fetch user:', err);
           setUser(null);
         }
-      } catch (err) {
-        console.error('Failed to fetch user:', err);
-        setUser(null);
       }
     };
     fetchUser();
@@ -129,67 +132,71 @@ function App() {
             <Route
               path="/home"
               element={
-                <div className="home-container">
-                  <Navigation user={user} />
-                  <div className="home-content">
-                    <h1 className="home-title" style={{ color: '#28a745' }}>
-                      {displayedText}
-                    </h1>
-                    <div style={{ margin: '20px 0' }}>
-                      <Link
-                        to="/browse"
-                        style={{
-                          backgroundColor: '#28a745',
-                          color: 'white',
-                          padding: '12px 25px',
-                          borderRadius: '8px',
-                          textDecoration: 'none',
-                          fontWeight: '500',
-                          display: 'inline-block',
-                        }}
-                      >
-                        Browse Plants
-                      </Link>
-                    </div>
-                    <div className="plants-grid" style={{ marginTop: '30px' }}>
-                      {Object.keys(plantModels).map((model) => (
-                        <div
-                          key={model}
-                          className="plant-card"
+                user ? (
+                  <div className="home-container">
+                    <Navigation user={user} />
+                    <div className="home-content">
+                      <h1 className="home-title" style={{ color: '#28a745' }}>
+                        {displayedText}
+                      </h1>
+                      <div style={{ margin: '20px 0' }}>
+                        <Link
+                          to="/browse"
                           style={{
-                            padding: '15px',
+                            backgroundColor: '#28a745',
+                            color: 'white',
+                            padding: '12px 25px',
                             borderRadius: '8px',
-                            boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
-                            transition: 'transform 0.3s ease',
+                            textDecoration: 'none',
+                            fontWeight: '500',
+                            display: 'inline-block',
                           }}
                         >
-                          <Link to={`/model/${model}`} style={{ textDecoration: 'none' }}>
-                            <img
-                              src={plantModels[model].image}
-                              alt={plantModels[model].name}
-                              style={{
-                                width: '180px',
-                                height: '180px',
-                                borderRadius: '8px',
-                                objectFit: 'cover',
-                              }}
-                            />
-                            <p
-                              className="plant-name"
-                              style={{
-                                color: '#28a745',
-                                marginTop: '10px',
-                                fontSize: '1.1rem',
-                              }}
-                            >
-                              {plantModels[model].name}
-                            </p>
-                          </Link>
-                        </div>
-                      ))}
+                          Browse Plants
+                        </Link>
+                      </div>
+                      <div className="plants-grid" style={{ marginTop: '30px' }}>
+                        {Object.keys(plantModels).map((model) => (
+                          <div
+                            key={model}
+                            className="plant-card"
+                            style={{
+                              padding: '15px',
+                              borderRadius: '8px',
+                              boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+                              transition: 'transform 0.3s ease',
+                            }}
+                          >
+                            <Link to={`/model/${model}`} style={{ textDecoration: 'none' }}>
+                              <img
+                                src={plantModels[model].image}
+                                alt={plantModels[model].name}
+                                style={{
+                                  width: '180px',
+                                  height: '180px',
+                                  borderRadius: '8px',
+                                  objectFit: 'cover',
+                                }}
+                              />
+                              <p
+                                className="plant-name"
+                                style={{
+                                  color: '#28a745',
+                                  marginTop: '10px',
+                                  fontSize: '1.1rem',
+                                }}
+                              >
+                                {plantModels[model].name}
+                              </p>
+                            </Link>
+                          </div>
+                        ))}
+                      </div>
                     </div>
                   </div>
-                </div>
+                ) : (
+                  <div>Loading...</div> // You can replace this with a better loading screen or spinner
+                )
               }
             />
 
