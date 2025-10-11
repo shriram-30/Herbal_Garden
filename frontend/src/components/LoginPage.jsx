@@ -57,6 +57,7 @@ const LoginPage = () => {
 
     const loginUser = async (url) => {
       try {
+        console.log("The user is",url);
         const response = await fetch(`${url}/api/auth/login`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
