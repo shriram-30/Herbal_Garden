@@ -8,7 +8,7 @@ import '../styles/SignupPage.css';
 const hi=`${config.backendUrl}/api/auth/register`;
 const SignupPage = () => {
   const [formData, setFormData] = useState({
-    name: '', // Changed from username to name for backend compatibility
+   
     email: '',
     password: '',
     confirmPassword: '',
