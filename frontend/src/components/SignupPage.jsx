@@ -5,94 +5,84 @@ import config from '../config';
 
 import '../styles/SignupPage.css';
 
-const URL=config.backendUrl;
 const SignupPage = () => {
   const [formData, setFormData] = useState({
-   
     email: '',
     password: '',
     confirmPassword: '',
     firstName: '',
     lastName: ''
   });
+
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
-  // Check if this is a callback from Google OAuth
   useEffect(() => {
-    // Check for existing token
     const token = localStorage.getItem('token');
     if (token) {
       navigate('/home');
       return;
     }
-    
-    // Check if this is a callback from Google OAuth
+
     const urlParams = new URLSearchParams(window.location.search);
     const oauthToken = urlParams.get('token');
     const user = urlParams.get('user');
     const error = urlParams.get('error');
     const errorMessage = urlParams.get('message');
-    
+
     if (oauthToken && user) {
       try {
-        // Parse user data if it's a JSON string
-        const userData = typeof user === 'string' ? JSON.parse(decodeURIComponent(user)) : user;
-        
-        // Store token and user data
+        const userData = typeof user === 'string'
+          ? JSON.parse(decodeURIComponent(user))
+          : user;
+
         localStorage.setItem('token', oauthToken);
         localStorage.setItem('user', JSON.stringify(userData));
-        
-        // Redirect to home page
+
         navigate('/home');
-        
-        // Clear URL parameters
         window.history.replaceState({}, document.title, window.location.pathname);
       } catch (err) {
         console.error('Error processing OAuth data:', err);
         setError(`Error processing login data: ${err.message}. Please try again.`);
       }
     } else if (error) {
-      const displayError = errorMessage 
-        ? `${error}: ${errorMessage}` 
-        : (error === 'google_auth_failed' ? 'Google login failed. Please try again.' : error);
+      const displayError = errorMessage
+        ? `${error}: ${errorMessage}`
+        : (error === 'google_auth_failed'
+          ? 'Google login failed. Please try again.'
+          : error);
       setError(displayError);
     }
   }, [navigate]);
 
-  const registerUser = async (URL, userData) => {
-    try {
-      const response = await fetch(`${URL}/api/auth/register`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(userData),
-      });
+  const registerUser = async (apiBaseUrl, userData) => {
+    const response = await fetch(`${apiBaseUrl}/api/auth/register`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(userData),
+    });
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'Registration failed');
-      }
-
-      return await response.json();
-    } catch (err) {
-      throw err;
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.message || 'Registration failed');
     }
+
+    return await response.json();
   };
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData({
-      ...formData,
+    setFormData(prev => ({
+      ...prev,
       [name]: value
-    });
+    }));
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
 
-    // Validate form
     if (formData.password !== formData.confirmPassword) {
       setError('Passwords do not match');
       return;
@@ -102,11 +92,11 @@ const SignupPage = () => {
       setError('Password must be at least 6 characters long');
       return;
     }
-    
+
     setLoading(true);
 
     const userData = {
-      name: formData.name,
+      name: `${formData.firstName} ${formData.lastName}`,
       email: formData.email,
       password: formData.password,
       firstName: formData.firstName,
@@ -114,32 +104,18 @@ const SignupPage = () => {
     };
 
     try {
-      // Try primary URL first
-      let data;
-      try {
-        data = await registerUser(config.backendUrl, userData);
-      } catch (primaryError) {
-        console.error('Primary registration failed, trying fallback:', primaryError);
-        // If primary fails and not already trying localhost, try localhost
-        if (!config.backendUrl.includes('localhost')) {
-          try {
-            data = await registerUser('http://localhost:5000', userData);
-          } catch (fallbackError) {
-            console.error('Fallback registration also failed:', fallbackError);
-            throw new Error(primaryError.message || 'Registration failed. Please try again later.');
-          }
-        } else {
-          throw primaryError;
-        }
+      const data = await registerUser(config.backendUrl, userData);
+
+      if (!data || !data.token || !data.user) {
+        throw new Error('Invalid server response');
       }
 
-      // Save token and user data to localStorage
       localStorage.setItem('token', data.token);
       localStorage.setItem('user', JSON.stringify(data.user));
-      
-      // Redirect to home page
+
       navigate('/home');
     } catch (err) {
+      console.error('Registration error:', err);
       setError(err.message || 'Failed to create an account. Please try again.');
     } finally {
       setLoading(false);
@@ -147,12 +123,10 @@ const SignupPage = () => {
   };
 
   return (
-    <>
-      <h1>{hi}</h1>
     <div className="signup-wrapper">
       <div className="signup-container">
         <h2 className="signup-title">Create an account</h2>
-        
+
         {error && (
           <div className="signup-error">{error}</div>
         )}
@@ -251,7 +225,6 @@ const SignupPage = () => {
         </p>
       </div>
     </div>
-    </>
   );
 };
 
