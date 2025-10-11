@@ -5,6 +5,7 @@ import config from '../config';
 
 import '../styles/SignupPage.css';
 
+const hi=`${config.backendUrl}/api/auth/register`;
 const SignupPage = () => {
   const [formData, setFormData] = useState({
     name: '', // Changed from username to name for backend compatibility
@@ -146,6 +147,8 @@ const SignupPage = () => {
   };
 
   return (
+    <>
+      <h1>{hi}</h1>
     <div className="signup-wrapper">
       <div className="signup-container">
         <h2 className="signup-title">Create an account</h2>
@@ -248,6 +251,7 @@ const SignupPage = () => {
         </p>
       </div>
     </div>
+    </>
   );
 };
 
