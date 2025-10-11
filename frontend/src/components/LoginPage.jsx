@@ -11,7 +11,7 @@ const LoginPage = () => {
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
-  // ✅ On mount: handle existing token or Google OAuth callback
+  // Check if user is already logged in or if this is a callback from Google OAuth
   useEffect(() => {
     const token = localStorage.getItem('token');
     if (token) {
@@ -27,12 +27,13 @@ const LoginPage = () => {
 
     if (oauthToken && user) {
       try {
-        const decodedUser = decodeURIComponent(user);
-        const parsedUser = JSON.parse(decodedUser);
+        const userData = typeof user === 'string' ? JSON.parse(decodeURIComponent(user)) : user;
 
+        // Store token and user data
         localStorage.setItem('token', oauthToken);
-        localStorage.setItem('user', JSON.stringify(parsedUser));
+        localStorage.setItem('user', JSON.stringify(userData));
 
+        // Redirect to home page
         navigate('/home');
         window.history.replaceState({}, document.title, window.location.pathname);
       } catch (err) {
@@ -42,14 +43,12 @@ const LoginPage = () => {
     } else if (error) {
       const displayError = errorMessage
         ? `${error}: ${errorMessage}`
-        : error === 'google_auth_failed'
-        ? 'Google login failed. Please try again.'
-        : error;
+        : (error === 'google_auth_failed' ? 'Google login failed. Please try again.' : error);
       setError(displayError);
     }
   }, [navigate]);
 
-  // ✅ Handle login form submission
+  // Handle form submission
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
@@ -57,7 +56,6 @@ const LoginPage = () => {
 
     const loginUser = async (url) => {
       try {
-        console.log("Attempting to login to:", url);
         const response = await fetch(`${url}/api/auth/login`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -66,26 +64,23 @@ const LoginPage = () => {
 
         if (!response.ok) {
           const errorData = await response.json();
-          console.error('Login failed:', errorData);
           throw new Error(errorData.message || 'Login failed');
         }
 
-        const data = await response.json();
-        console.log('Login successful, received data:', data);
-        return data;
+        return await response.json();
       } catch (err) {
-        console.error('Error during login request:', err);
         throw err;
       }
     };
 
     try {
+      // Try primary URL first
       let data;
       try {
-        // Attempt the login request
         data = await loginUser(config.backendUrl);
       } catch (primaryError) {
         console.error('Primary login failed, trying fallback:', primaryError);
+        // If primary fails and not already trying localhost, try localhost
         if (!config.backendUrl.includes('localhost')) {
           try {
             data = await loginUser('http://localhost:5000');
@@ -98,17 +93,13 @@ const LoginPage = () => {
         }
       }
 
-      // Check if data is valid before storing in localStorage
-      if (data?.token && data?.user && typeof data.user === 'string') {
-        console.log('Storing token and user as strings in localStorage...');
+      // Save token and user data to localStorage
+      if (data?.token && data?.user) {
         localStorage.setItem('token', data.token);
-        localStorage.setItem('user', data.user);  // Directly store the string
-
-        console.log('Data stored in localStorage:', localStorage.getItem('token'));
-        console.log('User data stored in localStorage:', localStorage.getItem('user'));
+        localStorage.setItem('user', JSON.stringify(data.user));
       } else {
-        console.warn('⚠️ Invalid or missing user data. Storing empty string instead.');
-        localStorage.setItem('user', ''); // Store an empty string if user data is invalid
+        console.warn('⚠️ No valid user data received, storing empty object.');
+        localStorage.setItem('user', JSON.stringify({}));
       }
 
       navigate('/home');
@@ -157,7 +148,11 @@ const LoginPage = () => {
             />
           </div>
 
-          <button type="submit" disabled={loading} className="submit-button">
+          <button
+            type="submit"
+            disabled={loading}
+            className="submit-button"
+          >
             {loading ? 'Signing in...' : 'Sign In'}
           </button>
         </form>
