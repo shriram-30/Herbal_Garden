@@ -13,12 +13,14 @@ const LoginPage = () => {
 
   // Check if user is already logged in or if this is a callback from Google OAuth
   useEffect(() => {
+    // Check for existing token
     const token = localStorage.getItem('token');
     if (token) {
       navigate('/home');
       return;
     }
 
+    // Check if this is a callback from Google OAuth
     const urlParams = new URLSearchParams(window.location.search);
     const oauthToken = urlParams.get('token');
     const user = urlParams.get('user');
@@ -27,6 +29,7 @@ const LoginPage = () => {
 
     if (oauthToken && user) {
       try {
+        // Parse user data if it's a JSON string
         const userData = typeof user === 'string' ? JSON.parse(decodeURIComponent(user)) : user;
 
         // Store token and user data
@@ -35,6 +38,7 @@ const LoginPage = () => {
 
         // Redirect to home page
         navigate('/home');
+        // Clear URL parameters
         window.history.replaceState({}, document.title, window.location.pathname);
       } catch (err) {
         console.error('Error processing OAuth data:', err);
