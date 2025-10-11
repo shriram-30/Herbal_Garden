@@ -1,214 +1,88 @@
-import React, { useState, useEffect } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
-import GoogleLogin from './GoogleLogin';
-import config from '../config';
+import User from '../models/User.js';
+import asyncHandler from 'express-async-handler';
+import jwt from 'jsonwebtoken';
 
-import '../styles/SignupPage.css';
+// @desc    Register a new user
+// @route   POST /api/users/signup
+// @access  Public
+const registerUser = asyncHandler(async (req, res) => {
+const { name, email, password } = req.body;
 
-const SignupPage = () => {
-  const [formData, setFormData] = useState({
-    email: '',
-    password: '',
-    confirmPassword: '',
-    firstName: '',
-    lastName: ''
-  });
+// Validate input
+if (!name || !email || !password) {
+res.status(400);
+throw new Error('Please provide name, email, and password');
+}
 
-  const [error, setError] = useState('');
-  const [loading, setLoading] = useState(false);
-  const navigate = useNavigate();
+// Check if user exists
+const userExists = await User.findOne({ email });
+if (userExists) {
+res.status(400);
+throw new Error('User already exists');
+}
 
-  // Handle Google OAuth callback (without storing anything in localStorage)
-  useEffect(() => {
-    const urlParams = new URLSearchParams(window.location.search);
-    const oauthToken = urlParams.get('token');
-    const user = urlParams.get('user');
-    const error = urlParams.get('error');
-    const errorMessage = urlParams.get('message');
+// Create user
+const user = await User.create({
+name,
+email,
+password
+});
 
-    if (oauthToken && user) {
-      try {
-        const userData = typeof user === 'string'
-          ? JSON.parse(decodeURIComponent(user))
-          : user;
+if (user) {
+// Generate JWT token
+const token = jwt.sign(
+{ id: user._id },
+process.env.JWT_SECRET,
+{ expiresIn: process.env.JWT_EXPIRES_IN || '30d' }
+);
 
-        // Optionally: pass user to a global state or context instead of localStorage
-        console.log('OAuth login success:', { token: oauthToken, user: userData });
+res.status(201).json({
+_id: user._id,
+name: user.name,
+email: user.email,
+      role: user.role, // Include user role in response
+token
+});
+} else {
+res.status(400);
+throw new Error('Invalid user data');
+}
+});
 
-        navigate('/home');
-        window.history.replaceState({}, document.title, window.location.pathname);
-      } catch (err) {
-        console.error('OAuth parsing error:', err);
-        setError('Error processing login data. Please try again.');
-      }
-    } else if (error) {
-      const displayError = errorMessage
-        ? `${error}: ${errorMessage}`
-        : error === 'google_auth_failed'
-        ? 'Google login failed. Please try again.'
-        : error;
-      setError(displayError);
-    }
-  }, [navigate]);
+// @desc    Authenticate user & get token
+// @route   POST /api/users/login
+// @access  Public
+const authUser = asyncHandler(async (req, res) => {
+const { email, password } = req.body;
 
-  const registerUser = async (userData) => {
-    const response = await fetch(`${config.backendUrl}/api/auth/register`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(userData),
-    });
+// Validate input
+if (!email || !password) {
+res.status(400);
+throw new Error('Please provide email and password');
+}
 
-    if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.message || 'Registration failed');
-    }
+// Check for user email
+const user = await User.findOne({ email }).select('+password');
 
-    return await response.json();
-  };
+if (user && (await user.matchPassword(password))) {
+// Generate JWT token
+const token = jwt.sign(
+{ id: user._id },
+process.env.JWT_SECRET,
+{ expiresIn: process.env.JWT_EXPIRES_IN || '30d' }
+);
 
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
-  };
+res.json({
+_id: user._id,
+name: user.name,
+email: user.email,
+      role: user.role, // Include user role in response
+token
+});
+} else {
+res.status(401);
+throw new Error('Invalid email or password');
+}
+});
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setError('');
-
-    if (formData.password !== formData.confirmPassword) {
-      setError('Passwords do not match');
-      return;
-    }
-
-    if (formData.password.length < 6) {
-      setError('Password must be at least 6 characters long');
-      return;
-    }
-
-    setLoading(true);
-
-    const userData = {
-      email: formData.email,
-      password: formData.password,
-      firstName: formData.firstName,
-      lastName: formData.lastName
-    };
-
-    try {
-      await registerUser(userData);
-
-      // Redirect after successful signup
-      navigate('/home');
-    } catch (err) {
-      setError(err.message || 'Registration failed. Please try again.');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  return (
-    <div className="signup-wrapper">
-      <div className="signup-container">
-        <h2 className="signup-title">Create an account</h2>
-
-        {error && <div className="signup-error">{error}</div>}
-
-        <form onSubmit={handleSubmit}>
-          <div className="form-row">
-            <div className="col">
-              <label htmlFor="firstName" className="label">First Name</label>
-              <input
-                type="text"
-                id="firstName"
-                name="firstName"
-                value={formData.firstName}
-                onChange={handleChange}
-                placeholder="First Name"
-                className="input"
-              />
-            </div>
-            <div className="col">
-              <label htmlFor="lastName" className="label">Last Name</label>
-              <input
-                type="text"
-                id="lastName"
-                name="lastName"
-                value={formData.lastName}
-                onChange={handleChange}
-                placeholder="Last Name"
-                className="input"
-              />
-            </div>
-          </div>
-
-          <div className="form-group">
-            <label htmlFor="email" className="label">Email</label>
-            <input
-              type="email"
-              id="email"
-              name="email"
-              value={formData.email}
-              onChange={handleChange}
-              required
-              placeholder="Enter your email"
-              className="input"
-            />
-          </div>
-
-          <div className="form-group">
-            <label htmlFor="password" className="label">Password</label>
-            <input
-              type="password"
-              id="password"
-              name="password"
-              value={formData.password}
-              onChange={handleChange}
-              required
-              placeholder="Create a password"
-              className="input"
-            />
-          </div>
-
-          <div className="form-group mb-20">
-            <label htmlFor="confirmPassword" className="label">Confirm Password</label>
-            <input
-              type="password"
-              id="confirmPassword"
-              name="confirmPassword"
-              value={formData.confirmPassword}
-              onChange={handleChange}
-              required
-              placeholder="Confirm your password"
-              className="input"
-            />
-          </div>
-
-          <button
-            type="submit"
-            disabled={loading}
-            className="submit-button"
-          >
-            {loading ? 'Creating Account...' : 'Sign Up'}
-          </button>
-        </form>
-
-        <div className="divider">
-          <div className="divider-line"></div>
-          <span className="divider-text">OR</span>
-          <div className="divider-line"></div>
-        </div>
-
-        <div className="oauth-container">
-          <GoogleLogin />
-        </div>
-
-        <p className="signin-text">
-          Already have an account?{' '}
-          <Link to="/login" className="signin-link">Sign in</Link>
-        </p>
-      </div>
-    </div>
-  );
-};
-
-export default SignupPage;
+export { registerUser, authUser };
