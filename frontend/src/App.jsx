@@ -86,24 +86,28 @@ function App() {
   // Use backend URL from config
   const backendUrl = config.backendUrl;
 
-  // Validate any stored JWT on startup; if expired, remove it to avoid blocking UI
+  // ✅ Safely retrieve user from localStorage
+  const storedUser = localStorage.getItem('user');
+  const user = storedUser && storedUser !== 'undefined' ? JSON.parse(storedUser) : null;
+
+  // Validate any stored JWT on startup
   useEffect(() => {
     const token = localStorage.getItem('token');
     const headers = {};
     if (token) headers['Authorization'] = `Bearer ${token}`;
 
-    // Use Vite proxy: relative /api to include cookies as well
     fetch('/api/users/profile', {
       credentials: 'include',
       headers,
-    }).then(async (res) => {
-      if (res.status === 401 && token) {
-        // Token likely expired; clear it so the app can operate with session or unauthenticated state
-        localStorage.removeItem('token');
-      }
-    }).catch(() => {
-      // Ignore network errors here; app should still render
-    });
+    })
+      .then(async (res) => {
+        if (res.status === 401 && token) {
+          localStorage.removeItem('token');
+        }
+      })
+      .catch(() => {
+        // Ignore network errors
+      });
   }, []);
 
   return (
@@ -117,82 +121,103 @@ function App() {
           };
           return <ChatbotWrapper />;
         })()}
+
         <div className="app">
           <Routes>
             <Route path="/" element={<LandingPage />} />
             <Route path="/login" element={<LoginPage />} />
             <Route path="/signup" element={<SignupPage />} />
-            <Route path="/home" element={
-              <div className="home-container">
-                <Navigation user={JSON.parse(localStorage.getItem('user'))} />
-                <div className="home-content">
-                    <h1 className="home-title" style={{ color: '#28a745', textShadow: 'none', animation: 'none' }}>{displayedText}</h1>
+
+            <Route
+              path="/home"
+              element={
+                <div className="home-container">
+                  <Navigation user={user} />
+                  <div className="home-content">
+                    <h1 className="home-title" style={{ color: '#28a745', textShadow: 'none', animation: 'none' }}>
+                      {displayedText}
+                    </h1>
                     <div style={{ margin: '20px 0' }}>
-                      <Link to="/browse" style={{ 
-                        backgroundColor: '#28a745', 
-                        color: 'white', 
-                        padding: '12px 25px',
-                        borderRadius: '8px',
-                        textDecoration: 'none',
-                        fontWeight: '500',
-                        display: 'inline-block'
-                      }}>
+                      <Link
+                        to="/browse"
+                        style={{
+                          backgroundColor: '#28a745',
+                          color: 'white',
+                          padding: '12px 25px',
+                          borderRadius: '8px',
+                          textDecoration: 'none',
+                          fontWeight: '500',
+                          display: 'inline-block',
+                        }}
+                      >
                         Browse Plants
                       </Link>
                     </div>
-                  <div className="plants-grid" style={{ marginTop: '30px' }}>
-                    {Object.keys(plantModels).map((model) => (
-                      <div key={model} className="plant-card" style={{ 
-                        padding: '15px',
-                        borderRadius: '8px',
-                        boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
-                        transition: 'transform 0.3s ease'
-                      }}>
-                        <Link to={`/model/${model}`} style={{ textDecoration: 'none' }}>
-                          <img
-                            src={plantModels[model].image}
-                            alt={plantModels[model].name}
-                            style={{ 
-                              width: '180px',
-                              height: '180px',
-                              borderRadius: '8px',
-                              objectFit: 'cover',
-                              animation: 'none'
-                            }}
-                          />
-                          <p className="plant-name" style={{ 
-                            color: '#28a745',
-                            textShadow: 'none',
-                            marginTop: '10px',
-                            fontSize: '1.1rem'
-                          }}>
-                            {plantModels[model].name}
-                          </p>
-                        </Link>
-                      </div>
-                    ))}
+                    <div className="plants-grid" style={{ marginTop: '30px' }}>
+                      {Object.keys(plantModels).map((model) => (
+                        <div
+                          key={model}
+                          className="plant-card"
+                          style={{
+                            padding: '15px',
+                            borderRadius: '8px',
+                            boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+                            transition: 'transform 0.3s ease',
+                          }}
+                        >
+                          <Link to={`/model/${model}`} style={{ textDecoration: 'none' }}>
+                            <img
+                              src={plantModels[model].image}
+                              alt={plantModels[model].name}
+                              style={{
+                                width: '180px',
+                                height: '180px',
+                                borderRadius: '8px',
+                                objectFit: 'cover',
+                                animation: 'none',
+                              }}
+                            />
+                            <p
+                              className="plant-name"
+                              style={{
+                                color: '#28a745',
+                                textShadow: 'none',
+                                marginTop: '10px',
+                                fontSize: '1.1rem',
+                              }}
+                            >
+                              {plantModels[model].name}
+                            </p>
+                          </Link>
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 </div>
-              </div>
-            } />
+              }
+            />
+
             <Route path="/browse" element={<BrowsePage plantModels={plantModels} />} />
             <Route path="/bookmarks" element={<BookmarksPage plantModels={plantModels} />} />
             <Route path="/quiz" element={<QuizSelection />} />
             <Route path="/quiz/:plantName" element={<QuizPage />} />
             <Route path="/notes" element={<NotesPage />} />
-          <Route path="/settings" element={<UserSettings />} />
+            <Route path="/settings" element={<UserSettings />} />
             <Route path="/model/:modelName" element={<ModelPage plantModels={plantModels} />} />
             <Route path="/auth/callback" element={<AuthCallbackPage />} />
-            
-            {/* Admin Dashboard - Accessible to all */}
-            <Route path="/admin/dashboard" element={
-              <>
-                <Navigation user={JSON.parse(localStorage.getItem('user'))} />
-                <AdminDashboard />
-              </>
-            } />
-            
-            {/* Fallback: redirect any unknown path (e.g., /main) to /home */}
+
+            {/* ✅ Safe version of AdminDashboard */}
+            <Route
+              path="/admin/dashboard"
+              element={
+                <>
+                  <Navigation user={user} />
+                  <AdminDashboard />
+                </>
+              }
+            />
+
+            {/* Fallback */}
             <Route path="*" element={<Navigate to="/home" replace />} />
           </Routes>
         </div>
