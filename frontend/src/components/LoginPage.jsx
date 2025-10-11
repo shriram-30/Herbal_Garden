@@ -99,16 +99,16 @@ const LoginPage = () => {
       }
 
       // Check if data is valid before storing in localStorage
-      if (data?.token && data?.user) {
-        console.log('Storing data in localStorage...');
+      if (data?.token && data?.user && typeof data.user === 'string') {
+        console.log('Storing token and user as strings in localStorage...');
         localStorage.setItem('token', data.token);
-        localStorage.setItem('user', JSON.stringify(data.user));
+        localStorage.setItem('user', data.user);  // Directly store the string
 
         console.log('Data stored in localStorage:', localStorage.getItem('token'));
         console.log('User data stored in localStorage:', localStorage.getItem('user'));
       } else {
-        console.warn('⚠️ No valid user data received, storing empty object.');
-        localStorage.setItem('user', JSON.stringify({}));
+        console.warn('⚠️ Invalid or missing user data. Storing empty string instead.');
+        localStorage.setItem('user', ''); // Store an empty string if user data is invalid
       }
 
       navigate('/home');
