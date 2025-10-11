@@ -177,7 +177,7 @@ function ModelPage({ plantModels }) {
 
   return (
    <>
-   <h1>{API_BASE}</h1>
+  
     <div style={{ 
       backgroundColor: palette.pageBg, 
       minHeight: "100vh",
