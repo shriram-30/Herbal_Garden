@@ -55,25 +55,29 @@ const LoginPage = () => {
     setError('');
     setLoading(true);
 
-    const loginUser = async (url) => {
-      try {
-        console.log("The user is",url);
-        const response = await fetch(`${url}/api/auth/login`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email, password }),
-        });
+   const loginUser = async (url) => {
+  try {
+    console.log("Attempting to login to:", url);
+    const response = await fetch(`${url}/api/auth/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password }),
+    });
 
-        if (!response.ok) {
-          const errorData = await response.json();
-          throw new Error(errorData.message || 'Login failed');
-        }
+    if (!response.ok) {
+      const errorData = await response.json();
+      console.error('Login failed:', errorData);
+      throw new Error(errorData.message || 'Login failed');
+    }
 
-        return await response.json();
-      } catch (err) {
-        throw err;
-      }
-    };
+    const data = await response.json();
+    console.log('Login successful, received data:', data);
+    return data;
+  } catch (err) {
+    console.error('Error during login request:', err);
+    throw err;
+  }
+};
 
     try {
       let data;
