@@ -19,6 +19,7 @@ const SignupPage = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
+    // ✅ Safe check for token in localStorage
     const token = localStorage.getItem('token');
     if (token) {
       navigate('/home');
@@ -31,11 +32,11 @@ const SignupPage = () => {
     const error = urlParams.get('error');
     const errorMessage = urlParams.get('message');
 
-    if (oauthToken && user) {
+    // ✅ Safe parse for OAuth user data
+    if (oauthToken && user && user !== 'undefined' && user !== 'null') {
       try {
-        const userData = typeof user === 'string'
-          ? JSON.parse(decodeURIComponent(user))
-          : user;
+        const decodedUser = decodeURIComponent(user);
+        const userData = JSON.parse(decodedUser);
 
         localStorage.setItem('token', oauthToken);
         localStorage.setItem('user', JSON.stringify(userData));
@@ -110,6 +111,7 @@ const SignupPage = () => {
         throw new Error('Invalid server response');
       }
 
+      // ✅ Safe localStorage writes
       localStorage.setItem('token', data.token);
       localStorage.setItem('user', JSON.stringify(data.user));
 
