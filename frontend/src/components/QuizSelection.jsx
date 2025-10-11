@@ -12,11 +12,11 @@ const QuizSelection = () => {
 
   // Plant images mapping
   const plantImages = {
-    'Tulasi': '/src/assets/tulasi.jpg',
-    'Aloe Vera': '/src/assets/aloevera.jpg',
-    'Neem': '/src/assets/neem.jpeg',
-    'Ashwagandha': '/src/assets/ashwagandha.jpg',
-    'Marjoram': '/src/assets/marjoram.jpg'
+    'Tulasi': 'https://github.com/mimictroll30/3d-models/blob/main/tulasi.jpg?raw=true',
+    'Aloe Vera': 'https://github.com/mimictroll30/3d-models/blob/main/tulasi.jpg?raw=true',
+    'Neem': 'https://github.com/mimictroll30/3d-models/blob/main/neem.jpeg?raw=true',
+    'Ashwagandha': 'https://github.com/mimictroll30/3d-models/blob/main/ashwagandha.jpg?raw=true',
+    'Marjoram': 'https://github.com/mimictroll30/3d-models/blob/main/marjoram.jpg?raw=true'
   };
 
   useEffect(() => {
