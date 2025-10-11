@@ -5,7 +5,7 @@ import config from '../config';
 
 import '../styles/SignupPage.css';
 
-const hi=`${config.backendUrl}/api/auth/register`;
+const url=config.backendUrl;
 const SignupPage = () => {
   const [formData, setFormData] = useState({
    
