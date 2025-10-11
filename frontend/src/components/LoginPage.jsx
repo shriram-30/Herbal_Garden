@@ -55,33 +55,34 @@ const LoginPage = () => {
     setError('');
     setLoading(true);
 
-   const loginUser = async (url) => {
-  try {
-    console.log("Attempting to login to:", url);
-    const response = await fetch(`${url}/api/auth/login`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, password }),
-    });
+    const loginUser = async (url) => {
+      try {
+        console.log("Attempting to login to:", url);
+        const response = await fetch(`${url}/api/auth/login`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, password }),
+        });
 
-    if (!response.ok) {
-      const errorData = await response.json();
-      console.error('Login failed:', errorData);
-      throw new Error(errorData.message || 'Login failed');
-    }
+        if (!response.ok) {
+          const errorData = await response.json();
+          console.error('Login failed:', errorData);
+          throw new Error(errorData.message || 'Login failed');
+        }
 
-    const data = await response.json();
-    console.log('Login successful, received data:', data);
-    return data;
-  } catch (err) {
-    console.error('Error during login request:', err);
-    throw err;
-  }
-};
+        const data = await response.json();
+        console.log('Login successful, received data:', data);
+        return data;
+      } catch (err) {
+        console.error('Error during login request:', err);
+        throw err;
+      }
+    };
 
     try {
       let data;
       try {
+        // Attempt the login request
         data = await loginUser(config.backendUrl);
       } catch (primaryError) {
         console.error('Primary login failed, trying fallback:', primaryError);
@@ -97,13 +98,14 @@ const LoginPage = () => {
         }
       }
 
-      // ✅ Safely handle and store login data
-      if (data?.token) {
+      // Check if data is valid before storing in localStorage
+      if (data?.token && data?.user) {
+        console.log('Storing data in localStorage...');
         localStorage.setItem('token', data.token);
-      }
-
-      if (data?.user && typeof data.user === 'object') {
         localStorage.setItem('user', JSON.stringify(data.user));
+
+        console.log('Data stored in localStorage:', localStorage.getItem('token'));
+        console.log('User data stored in localStorage:', localStorage.getItem('user'));
       } else {
         console.warn('⚠️ No valid user data received, storing empty object.');
         localStorage.setItem('user', JSON.stringify({}));
