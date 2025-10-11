@@ -1,12 +1,18 @@
 import React, { useState, useEffect } from 'react';
-import { BrowserRouter as Router, Routes, Route, useLocation, Navigate, Link } from 'react-router-dom';
+import {
+  BrowserRouter as Router,
+  Routes,
+  Route,
+  useLocation,
+  Navigate,
+  Link,
+} from 'react-router-dom';
 
 import config from './config';
 import { BookmarkProvider } from './contexts/BookmarkContext';
 
 import ModelPage from './components/ModelPage';
 import Navigation from './components/Navigation';
-import PlantDescription from './components/PlantDescription';
 import LandingPage from './components/LandingPage';
 import LoginPage from './components/LoginPage';
 import SignupPage from './components/SignupPage';
@@ -25,42 +31,43 @@ import './styles/components.css';
 
 function App() {
   const [user, setUser] = useState(null);
-  const [displayedText, setDisplayedText] = useState("");
-  const welcomeText = "Welcome to the Virtual Herbal Garden";
+  const [displayedText, setDisplayedText] = useState('');
+  const welcomeText = 'Welcome to the Virtual Herbal Garden';
 
   const [plantModels] = useState({
     tulasi: {
       id: 'tulasi',
-      name: "Tulasi",
+      name: 'Tulasi',
       image: 'https://github.com/mimictroll30/3d-models/blob/main/tulasi.jpg?raw=true',
-      description: "Tulasi (Ocimum tenuiflorum), also known as holy basil...",
+      description: 'Tulasi (Ocimum tenuiflorum), also known as holy basil...',
     },
     aloevera: {
       id: 'aloevera',
-      name: "Aloe Vera",
+      name: 'Aloe Vera',
       image: 'https://github.com/mimictroll30/3d-models/blob/main/aloevera.jpg?raw=true',
-      description: "Aloe vera is a succulent plant species...",
+      description: 'Aloe vera is a succulent plant species...',
     },
     neem: {
       id: 'neem',
-      name: "Neem",
+      name: 'Neem',
       image: 'https://github.com/mimictroll30/3d-models/blob/main/neem.jpeg?raw=true',
-      description: "Neem is a tree in the mahogany family...",
+      description: 'Neem is a tree in the mahogany family...',
     },
     ashwagandha: {
       id: 'ashwagandha',
-      name: "Ashwagandha",
+      name: 'Ashwagandha',
       image: 'https://github.com/mimictroll30/3d-models/blob/main/ashwagandha.jpg?raw=true',
-      description: "Ashwagandha is a powerful adaptogenic herb...",
+      description: 'Ashwagandha is a powerful adaptogenic herb...',
     },
     marjoram: {
       id: 'marjoram',
-      name: "Marjoram",
+      name: 'Marjoram',
       image: 'https://github.com/mimictroll30/3d-models/blob/main/marjoram.jpg?raw=true',
-      description: "Marjoram is a fragrant herb...",
+      description: 'Marjoram is a fragrant herb...',
     },
   });
 
+  // Typing effect
   useEffect(() => {
     let index = 0;
     const interval = setInterval(() => {
@@ -71,7 +78,7 @@ function App() {
     return () => clearInterval(interval);
   }, [welcomeText]);
 
-  // ✅ Fetch user profile from server (not from localStorage)
+  // Fetch user on app load
   useEffect(() => {
     const fetchUser = async () => {
       try {
@@ -85,13 +92,24 @@ function App() {
           setUser(null);
         }
       } catch (err) {
-        console.error("Failed to fetch user:", err);
+        console.error('Failed to fetch user:', err);
         setUser(null);
       }
     };
     fetchUser();
   }, []);
 
+  // Clear user info on tab/window close
+  useEffect(() => {
+    const handleUnload = () => {
+      localStorage.removeItem('user');
+      localStorage.removeItem('token');
+    };
+    window.addEventListener('beforeunload', handleUnload);
+    return () => window.removeEventListener('beforeunload', handleUnload);
+  }, []);
+
+  // Show Chatbot on all pages except Landing
   const ChatbotWrapper = () => {
     const location = useLocation();
     return location.pathname !== '/' ? <Chatbot /> : null;
@@ -104,8 +122,8 @@ function App() {
         <div className="app">
           <Routes>
             <Route path="/" element={<LandingPage />} />
-            <Route path="/login" element={<LoginPage />} />
-            <Route path="/signup" element={<SignupPage />} />
+            <Route path="/login" element={<LoginPage setUser={setUser} />} />
+            <Route path="/signup" element={<SignupPage setUser={setUser} />} />
             <Route path="/auth/callback" element={<AuthCallbackPage />} />
 
             <Route
@@ -135,12 +153,16 @@ function App() {
                     </div>
                     <div className="plants-grid" style={{ marginTop: '30px' }}>
                       {Object.keys(plantModels).map((model) => (
-                        <div key={model} className="plant-card" style={{
-                          padding: '15px',
-                          borderRadius: '8px',
-                          boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
-                          transition: 'transform 0.3s ease',
-                        }}>
+                        <div
+                          key={model}
+                          className="plant-card"
+                          style={{
+                            padding: '15px',
+                            borderRadius: '8px',
+                            boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+                            transition: 'transform 0.3s ease',
+                          }}
+                        >
                           <Link to={`/model/${model}`} style={{ textDecoration: 'none' }}>
                             <img
                               src={plantModels[model].image}
@@ -152,11 +174,14 @@ function App() {
                                 objectFit: 'cover',
                               }}
                             />
-                            <p className="plant-name" style={{
-                              color: '#28a745',
-                              marginTop: '10px',
-                              fontSize: '1.1rem',
-                            }}>
+                            <p
+                              className="plant-name"
+                              style={{
+                                color: '#28a745',
+                                marginTop: '10px',
+                                fontSize: '1.1rem',
+                              }}
+                            >
                               {plantModels[model].name}
                             </p>
                           </Link>
