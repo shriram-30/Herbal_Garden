@@ -18,47 +18,41 @@ const SignupPage = () => {
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
+  // Handle Google OAuth callback (without storing anything in localStorage)
   useEffect(() => {
-    // ✅ Safe check for token in localStorage
-    const token = localStorage.getItem('token');
-    if (token) {
-      navigate('/home');
-      return;
-    }
-
     const urlParams = new URLSearchParams(window.location.search);
     const oauthToken = urlParams.get('token');
     const user = urlParams.get('user');
     const error = urlParams.get('error');
     const errorMessage = urlParams.get('message');
 
-    // ✅ Safe parse for OAuth user data
-    if (oauthToken && user && user !== 'undefined' && user !== 'null') {
+    if (oauthToken && user) {
       try {
-        const decodedUser = decodeURIComponent(user);
-        const userData = JSON.parse(decodedUser);
+        const userData = typeof user === 'string'
+          ? JSON.parse(decodeURIComponent(user))
+          : user;
 
-        localStorage.setItem('token', oauthToken);
-        localStorage.setItem('user', JSON.stringify(userData));
+        // Optionally: pass user to a global state or context instead of localStorage
+        console.log('OAuth login success:', { token: oauthToken, user: userData });
 
         navigate('/home');
         window.history.replaceState({}, document.title, window.location.pathname);
       } catch (err) {
-        console.error('Error processing OAuth data:', err);
-        setError(`Error processing login data: ${err.message}. Please try again.`);
+        console.error('OAuth parsing error:', err);
+        setError('Error processing login data. Please try again.');
       }
     } else if (error) {
       const displayError = errorMessage
         ? `${error}: ${errorMessage}`
-        : (error === 'google_auth_failed'
-          ? 'Google login failed. Please try again.'
-          : error);
+        : error === 'google_auth_failed'
+        ? 'Google login failed. Please try again.'
+        : error;
       setError(displayError);
     }
   }, [navigate]);
 
-  const registerUser = async (apiBaseUrl, userData) => {
-    const response = await fetch(`${apiBaseUrl}/api/auth/register`, {
+  const registerUser = async (userData) => {
+    const response = await fetch(`${config.backendUrl}/api/auth/register`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(userData),
@@ -74,10 +68,7 @@ const SignupPage = () => {
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: value
-    }));
+    setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
   const handleSubmit = async (e) => {
@@ -97,7 +88,6 @@ const SignupPage = () => {
     setLoading(true);
 
     const userData = {
-      name: `${formData.firstName} ${formData.lastName}`,
       email: formData.email,
       password: formData.password,
       firstName: formData.firstName,
@@ -105,20 +95,12 @@ const SignupPage = () => {
     };
 
     try {
-      const data = await registerUser(config.backendUrl, userData);
+      await registerUser(userData);
 
-      if (!data || !data.token || !data.user) {
-        throw new Error('Invalid server response');
-      }
-
-      // ✅ Safe localStorage writes
-      localStorage.setItem('token', data.token);
-      localStorage.setItem('user', JSON.stringify(data.user));
-
+      // Redirect after successful signup
       navigate('/home');
     } catch (err) {
-      console.error('Registration error:', err);
-      setError(err.message || 'Failed to create an account. Please try again.');
+      setError(err.message || 'Registration failed. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -129,9 +111,7 @@ const SignupPage = () => {
       <div className="signup-container">
         <h2 className="signup-title">Create an account</h2>
 
-        {error && (
-          <div className="signup-error">{error}</div>
-        )}
+        {error && <div className="signup-error">{error}</div>}
 
         <form onSubmit={handleSubmit}>
           <div className="form-row">
@@ -223,7 +203,8 @@ const SignupPage = () => {
         </div>
 
         <p className="signin-text">
-          Already have an account? <Link to="/login" className="signin-link">Sign in</Link>
+          Already have an account?{' '}
+          <Link to="/login" className="signin-link">Sign in</Link>
         </p>
       </div>
     </div>
