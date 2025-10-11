@@ -5,7 +5,7 @@ import config from '../config';
 
 import '../styles/SignupPage.css';
 
-const url=config.backendUrl;
+const URL=config.backendUrl;
 const SignupPage = () => {
   const [formData, setFormData] = useState({
    
@@ -61,9 +61,9 @@ const SignupPage = () => {
     }
   }, [navigate]);
 
-  const registerUser = async (url, userData) => {
+  const registerUser = async (URL, userData) => {
     try {
-      const response = await fetch(`${url}/api/auth/register`, {
+      const response = await fetch(`${URL}/api/auth/register`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(userData),
