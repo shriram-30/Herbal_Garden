@@ -78,6 +78,7 @@ const PlantDescription = ({ plantName: propPlantName }) => {
     return (
       <div className="plant-description">
         <div className="no-data">
+          <h2>{API_BASE}</h2>
           <h3>No information available</h3>
           <p>No information available for plant: {plantName}</p>
         </div>
