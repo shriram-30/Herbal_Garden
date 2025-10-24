@@ -13,7 +13,7 @@ const QuizSelection = () => {
   // Plant images mapping
   const plantImages = {
     'Tulasi': 'https://github.com/mimictroll30/3d-models/blob/main/tulasi.jpg?raw=true',
-    'Aloe Vera': 'https://github.com/mimictroll30/3d-models/blob/main/tulasi.jpg?raw=true',
+    'Aloe Vera': 'https://github.com/mimictroll30/3d-models/blob/main/aloevera.jpg?raw=true',
     'Neem': 'https://github.com/mimictroll30/3d-models/blob/main/neem.jpeg?raw=true',
     'Ashwagandha': 'https://github.com/mimictroll30/3d-models/blob/main/ashwagandha.jpg?raw=true',
     'Marjoram': 'https://github.com/mimictroll30/3d-models/blob/main/marjoram.jpg?raw=true'
